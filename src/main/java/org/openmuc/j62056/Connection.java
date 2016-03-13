@@ -208,10 +208,8 @@ public class Connection {
 	    if (dataSets.length < 8) {
 		throw new IOException("Data message does not have minimum length of 8.");
 	    }
-	} else {
-	    if (dataSets.length < 5) {
-		throw new IOException("Data message does not have minimum length of 5.");
-	    }
+	} else if (dataSets.length < 5) {
+	    throw new IOException("Data message does not have minimum length of 5.");
 	}
 
 	List<DataSet> dataSets = new ArrayList<>();
@@ -369,15 +367,18 @@ public class Connection {
 	while (timeout == 0 || timeval < timeout) {
 	    int availableBytes = is.available();
 	    if ((availableBytes > 0) && (numBytesReadTotal + availableBytes <= INPUT_BUFFER_LENGTH)) {
-
-		int numBytesRead = is.read(readBuffer, numBytesReadTotal, INPUT_BUFFER_LENGTH - numBytesReadTotal);
+		int bytesToRead = 1;
+		if (numBytesReadTotal == 0) {
+		    bytesToRead = readAtLeastBytes;
+		}
+		int numBytesRead = is.read(readBuffer, numBytesReadTotal, bytesToRead);
 		numBytesReadTotal += numBytesRead;
 
 		if (numBytesRead > 0) {
 		    timeval = 0;
 		}
 
-		if ((numBytesReadTotal >= readAtLeastBytes) && endsWith(readBuffer, numBytesReadTotal, readEnd)) {
+		if ((numBytesReadTotal >= readAtLeastBytes) && ((null == readEnd) || endsWith(readBuffer, numBytesReadTotal, readEnd))) {
 		    readSuccessful = true;
 		    break;
 		}
@@ -476,7 +477,7 @@ public class Connection {
 	return result;
     }
 
-	// private static String getByteArrayString(byte[] byteArray, int max) {
+    // private static String getByteArrayString(byte[] byteArray, int max) {
     // StringBuilder builder = new StringBuilder();
     // int l = 1;
     // for (int i = 0; i < max; i++) {

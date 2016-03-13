@@ -158,6 +158,19 @@ public class ConnectionTest {
     }
 
     @Test
+    public void testReadDataInSteps() throws IOException {
+	final byte[] answer = {12, 32, 53, 23, 54, 12, 34, 21, 2, 1, 3, 24, 43, 21, 13};
+	InputStream is = createInputStream(answer);
+	byte[] end = {2, 1, 3};
+	Assert.assertArrayEquals(new byte[]{12, 32, 53, 23, 54, 12, 34, 21, 2, 1, 3}, instance.readData(is, 10, end, 1000));
+	Assert.assertTrue(is.available() == 4);
+	Assert.assertArrayEquals(new byte[]{24, 43, 21}, instance.readData(is, 3, null, 1000));
+	Assert.assertTrue(is.available() == 1);
+	Assert.assertArrayEquals(new byte[]{13}, instance.readData(is, 1, null, 1000));
+	Assert.assertTrue(is.available() == 0);
+    }
+
+    @Test
     public void testSendData() throws IOException {
 	OutputStream os = Mockito.mock(OutputStream.class);
 	byte[] data = {21, 12, 42, 12, 4, 2, 35};
