@@ -197,6 +197,66 @@ public class ConnectionTest {
 	instance.sendData(os, data);
     }
 
+    @Test
+    public void testTermindatedWithCrLf() {
+	byte[] data = {21, 12, 42, 12, 0x0d, 0x0a, 35};
+	Assert.assertTrue(instance.termindatedWithCrLf(data, 3));
+    }
+
+    @Test
+    public void testTermindatedWithCrLf2() {
+	byte[] data = {21, 12, 42, 12, 0x0d, 0x0a};
+	Assert.assertTrue(instance.termindatedWithCrLf(data, 3));
+    }
+
+    @Test
+    public void testNotTermindatedWithCrLf() {
+	byte[] data = {21, 12, 42, 12, 0x0d, 0x0a, 35};
+	Assert.assertFalse(instance.termindatedWithCrLf(data, 4));
+    }
+
+    @Test
+    public void testNotTermindatedWithCrLf2() {
+	byte[] data = {21, 12, 42, 12, 0x0d, 0x0a, 35};
+	Assert.assertFalse(instance.termindatedWithCrLf(data, 7));
+    }
+
+    @Test
+    public void testNotTermindatedWithCrLfNull() {
+	byte[] data = null;
+	Assert.assertFalse(instance.termindatedWithCrLf(data, 7));
+    }
+
+    @Test
+    public void testEndOfDataSets() {
+	byte[] data = {21, 12, 42, 0x21, 0x0d, 0x0a, 35};
+	Assert.assertTrue(instance.endOfDataSets(data, 2));
+    }
+
+    @Test
+    public void testEndOfDataSets2() {
+	byte[] data = {21, 12, 42, 0x21, 0x0d, 0x0a};
+	Assert.assertTrue(instance.endOfDataSets(data, 2));
+    }
+
+    @Test
+    public void testNoEndOfDataSets() {
+	byte[] data = {21, 12, 42, 0x21, 0x0d, 0x0a};
+	Assert.assertFalse(instance.endOfDataSets(data, 4));
+    }
+
+    @Test
+    public void testNoEndOfDataSets2() {
+	byte[] data = {21, 12, 42, 0x21, 0x0d, 0x0a};
+	Assert.assertFalse(instance.endOfDataSets(data, 7));
+    }
+
+    @Test
+    public void testNoEndOfDataSetsNull() {
+	byte[] data = null;
+	Assert.assertFalse(instance.endOfDataSets(data, 7));
+    }
+
     private InputStream createInputStream(byte[] bytes) {
 	return new ByteArrayInputStream(bytes);
     }

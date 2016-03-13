@@ -208,82 +208,150 @@ public class Connection {
 	    if (dataSets.length < 8) {
 		throw new IOException("Data message does not have minimum length of 8.");
 	    }
+	    try {
+		readData(is, 1, null, 1000);
+	    } catch (RuntimeException ex) {
+		//ignore exception
+	    }
 	} else if (dataSets.length < 5) {
 	    throw new IOException("Data message does not have minimum length of 5.");
 	}
 
-	List<DataSet> dataSets = new ArrayList<>();
-	dataSets.add(new DataSet(identification, "", ""));
-
-	while (index != endIndex) {
-	    String id = null;
-
-	    for (int i = index; i < endIndex - 1; i++) {
-		if (buffer[i] == 0x28) {
-		    // found '('
-		    id = new String(buffer, index, i - index, charset);
-		    index = i + 1;
-		    break;
-		}
-	    }
-	    if (id == null) {
-		throw new IOException(
-			"'(' (0x28) character is expected but not received inside data block of data message.");
-	    }
-
-	    String value = "";
-	    String unit = "";
-	    for (int i = index; i < endIndex; i++) {
-		if (buffer[i] == 0x2A) {
-		    // found '*'
-		    if (i > index) {
-			value = new String(buffer, index, i - index, charset);
-		    }
-		    index = i + 1;
-
-		    for (int j = index; j < endIndex; j++) {
-			if (buffer[j] == 0x29) {
-			    // found ')'
-			    unit = new String(buffer, index, j - index, charset);
-			    index = j + 1;
-			    break;
-			}
-		    }
-
-		    break;
-		} else if (buffer[i] == 0x29) {
-		    // found ')'
-		    if (i > index) {
-			value = new String(buffer, index, i - index, charset);
-		    }
-		    index = i + 1;
-		    break;
-		}
-	    }
-	    if (buffer[index - 1] != 0x29) {
-		throw new IOException(
-			"')' (0x29) character is expected but not received inside data block of data message.");
-	    }
-
-	    dataSets.add(new DataSet(id, value, unit));
-
-	    if (buffer[index] == 0x0d && buffer[index + 1] == 0x0a) {
-		index += 2;
-	    }
-
-	}
-	return dataSets;
-
-    }
-
-    protected List<DataSet> readDataSets(final byte[] message, final int offset) {
-	for (int idx = offset; idx < message.length - 3; idx++) {
-
-	}
+	List<DataSet> result = new ArrayList<>();
+	result.add(new DataSet(identification, "", ""));
+	result.addAll(readDataSets(dataSets, offset));
+	return result;
     }
 
     /**
-     * handle the sign on
+     * read the datasets.
+     *
+     * @param datasets the byte array with the data message
+     * @param offset the start of the first data line
+     * @return the readed data lines
+     * @throws IOException
+     */
+    protected List<DataSet> readDataSets(final byte[] datasets, final int offset) throws IOException {
+	List<DataSet> result = new ArrayList<>();
+
+	int index = offset;
+	while (index < datasets.length) {
+	    int nextValueStart = findNextValueStart(datasets, index);
+	    if (nextValueStart < 0) {
+		throw new IOException("'(' (0x28) character is expected but not received inside data block of data message.");
+	    }
+	    String id = new String(datasets, index, nextValueStart - index, charset);
+	    index = nextValueStart + 1;
+
+	    int nextValueEnd = findNextValueEnd(datasets, index);
+	    if (nextValueEnd < 0) {
+		throw new IOException("'(' (0x29) character is expected but not received inside data block of data message.");
+	    }
+	    String value;
+	    String unit = "";
+	    int nextUnitStart = findNextUnitStart(datasets, index, nextValueEnd);
+	    if (nextUnitStart > 0) {
+		value = new String(datasets, index, nextUnitStart - index, charset);
+		index = nextUnitStart + 1;
+		unit = new String(datasets, index, nextValueEnd - index, charset);
+		index = nextValueEnd + 1;
+	    } else {
+		value = new String(datasets, index, nextValueEnd - index, charset);
+		index = nextValueEnd + 1;
+	    }
+	    result.add(new DataSet(id, value, unit));
+
+	    if (termindatedWithCrLf(datasets, index)) {
+		index += 2;
+	    }
+	    if (endOfDataSets(datasets, index)) {
+		break;
+	    }
+	}
+	return result;
+    }
+
+    /**
+     * finds the next start of a value.
+     *
+     * @param datasets the byte array with the data lines
+     * @param offset start position
+     * @return the next start of a value or -1
+     */
+    protected int findNextValueStart(final byte[] datasets, final int offset) {
+	int result = -1;
+	for (int i = offset; i < datasets.length - 1; i++) {
+	    if (datasets[i] == 0x28) {
+		result = i;
+		break;
+	    }
+	}
+	return result;
+    }
+
+    /**
+     * finds the next end of a value.
+     *
+     * @param datasets the byte array with the data lines
+     * @param offset the start position
+     * @return the next end of the value or -1
+     */
+    protected int findNextValueEnd(final byte[] datasets, final int offset) {
+	int result = -1;
+	for (int i = offset; i < datasets.length - 1; i++) {
+	    if (datasets[i] == 0x29) {
+		result = i;
+		break;
+	    }
+	}
+	return result;
+    }
+
+    /**
+     * finds the next start of a unit.
+     *
+     * @param datasets the bytearray with the data lines
+     * @param offset the start position
+     * @param upto the end position
+     * @return the next start of a unit or -1
+     */
+    protected int findNextUnitStart(final byte[] datasets, final int offset, final int upto) {
+	int result = -1;
+	for (int i = offset; (i < upto) && (i < datasets.length); i++) {
+	    if (datasets[i] == 0x2A) {
+		// found '*'; start of unit
+		result = i;
+		break;
+	    }
+	}
+	return result;
+    }
+
+    /**
+     * checks if the end of data block is reached.
+     *
+     * @param datasets the byte array with the data lines
+     * @param offset the current position
+     * @return true if the next bytes indicate the end of a data block
+     */
+    protected boolean endOfDataSets(final byte[] datasets, final int offset) {
+	return endsWith(datasets, offset + 4, MESSAGE_COMPLETION_CHARACTERS);
+    }
+
+    /**
+     * checks if the end of data line is terminated with CR+LF.
+     *
+     * @param datasets the byte array with the data lines
+     * @param offset the current position
+     * @return true if the next bytes indicate the termination with CR+LF of a
+     * data line
+     */
+    protected boolean termindatedWithCrLf(final byte[] datasets, final int offset) {
+	return endsWith(datasets, offset + 3, COMPLETION_CHARACTERS);
+    }
+
+    /**
+     * handle the sign on.
      *
      * @param serialPort the serialport
      * @param os the outputstram
@@ -347,7 +415,7 @@ public class Connection {
     }
 
     /**
-     * read data from the input stream and wait for readEnd bytes or timout
+     * read data from the input stream and wait for readEnd bytes or timout.
      *
      * @param is the inputstream to read from
      * @param readAtLeastBytes amount of byte to read at least
@@ -419,7 +487,7 @@ public class Connection {
     }
 
     /**
-     * configre the serialport
+     * configre the serialport.
      *
      * @param serialPort the serial port to configure
      * @param changeDelay time to wait for changing the settings
@@ -444,7 +512,7 @@ public class Connection {
     }
 
     /**
-     * Returns the baud rate chosen by the server for this communication
+     * Returns the baud rate chosen by the server for this communication.
      *
      * @param baudCharacter Encoded baud rate (see 6.3.14 item 13c)
      * @return The chosen baud rate or -1 on error
@@ -477,22 +545,4 @@ public class Connection {
 	return result;
     }
 
-    // private static String getByteArrayString(byte[] byteArray, int max) {
-    // StringBuilder builder = new StringBuilder();
-    // int l = 1;
-    // for (int i = 0; i < max; i++) {
-    // if ((l != 1) && ((l - 1) % 8 == 0))
-    // builder.append(' ');
-    // if ((l != 1) && ((l - 1) % 16 == 0))
-    // builder.append('\n');
-    // l++;
-    // builder.append("0x");
-    // String hexString = Integer.toHexString(byteArray[i] & 0xff);
-    // if (hexString.length() == 1) {
-    // builder.append(0);
-    // }
-    // builder.append(hexString + " ");
-    // }
-    // return builder.toString();
-    // }
 }
