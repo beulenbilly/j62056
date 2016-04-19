@@ -233,39 +233,40 @@ public class Connection {
      */
     protected List<DataSet> readDataSets(final byte[] datasets, final int offset) throws IOException {
 	List<DataSet> result = new ArrayList<>();
+	if (null != datasets) {
+	    int index = offset;
+	    while (index < datasets.length) {
+		int nextValueStart = findNextValueStart(datasets, index);
+		if (nextValueStart < 0) {
+		    throw new IOException("'(' (0x28) character is expected but not received inside data block of data message.");
+		}
+		String id = new String(datasets, index, nextValueStart - index, charset);
+		index = nextValueStart + 1;
 
-	int index = offset;
-	while (index < datasets.length) {
-	    int nextValueStart = findNextValueStart(datasets, index);
-	    if (nextValueStart < 0) {
-		throw new IOException("'(' (0x28) character is expected but not received inside data block of data message.");
-	    }
-	    String id = new String(datasets, index, nextValueStart - index, charset);
-	    index = nextValueStart + 1;
+		int nextValueEnd = findNextValueEnd(datasets, index);
+		if (nextValueEnd < 0) {
+		    throw new IOException("'(' (0x29) character is expected but not received inside data block of data message.");
+		}
+		String value;
+		String unit = "";
+		int nextUnitStart = findNextUnitStart(datasets, index, nextValueEnd);
+		if (nextUnitStart > 0) {
+		    value = new String(datasets, index, nextUnitStart - index, charset);
+		    index = nextUnitStart + 1;
+		    unit = new String(datasets, index, nextValueEnd - index, charset);
+		    index = nextValueEnd + 1;
+		} else {
+		    value = new String(datasets, index, nextValueEnd - index, charset);
+		    index = nextValueEnd + 1;
+		}
+		result.add(new DataSet(id, value, unit));
 
-	    int nextValueEnd = findNextValueEnd(datasets, index);
-	    if (nextValueEnd < 0) {
-		throw new IOException("'(' (0x29) character is expected but not received inside data block of data message.");
-	    }
-	    String value;
-	    String unit = "";
-	    int nextUnitStart = findNextUnitStart(datasets, index, nextValueEnd);
-	    if (nextUnitStart > 0) {
-		value = new String(datasets, index, nextUnitStart - index, charset);
-		index = nextUnitStart + 1;
-		unit = new String(datasets, index, nextValueEnd - index, charset);
-		index = nextValueEnd + 1;
-	    } else {
-		value = new String(datasets, index, nextValueEnd - index, charset);
-		index = nextValueEnd + 1;
-	    }
-	    result.add(new DataSet(id, value, unit));
-
-	    if (termindatedWithCrLf(datasets, index)) {
-		index += 2;
-	    }
-	    if (endOfDataSets(datasets, index)) {
-		break;
+		if (termindatedWithCrLf(datasets, index)) {
+		    index += 2;
+		}
+		if (endOfDataSets(datasets, index)) {
+		    break;
+		}
 	    }
 	}
 	return result;

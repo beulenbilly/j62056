@@ -9,6 +9,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -255,6 +256,20 @@ public class ConnectionTest {
     public void testNoEndOfDataSetsNull() {
 	byte[] data = null;
 	Assert.assertFalse(instance.endOfDataSets(data, 7));
+    }
+
+    @Test
+    public void testReadDataSetsNull() throws IOException {
+	List<DataSet> dataSets = instance.readDataSets(null, 0);
+	Assert.assertNotNull(dataSets);
+	Assert.assertTrue(dataSets.isEmpty());
+    }
+
+    @Test
+    public void testReadDataSetsInValidOffset() throws IOException {
+	List<DataSet> dataSets = instance.readDataSets("ksfdjalksdjflakjd".getBytes(), 25);
+	Assert.assertNotNull(dataSets);
+	Assert.assertTrue(dataSets.isEmpty());
     }
 
     private InputStream createInputStream(byte[] bytes) {
