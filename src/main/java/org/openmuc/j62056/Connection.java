@@ -282,7 +282,7 @@ public class Connection {
     protected int findNextValueStart(final byte[] datasets, final int offset) {
 	int result = -1;
 	for (int i = offset; i < datasets.length - 1; i++) {
-	    if (datasets[i] == 0x28) {
+	    if (datasets[i] == (byte) 0x28) {
 		result = i;
 		break;
 	    }
@@ -336,7 +336,7 @@ public class Connection {
      * @return true if the next bytes indicate the end of a data block
      */
     protected boolean endOfDataSets(final byte[] datasets, final int offset) {
-	return endsWith(datasets, offset + 4, MESSAGE_COMPLETION_CHARACTERS);
+	return endsWith(datasets, offset + 3, MESSAGE_COMPLETION_CHARACTERS);
     }
 
     /**
@@ -348,7 +348,7 @@ public class Connection {
      * data line
      */
     protected boolean termindatedWithCrLf(final byte[] datasets, final int offset) {
-	return endsWith(datasets, offset + 3, COMPLETION_CHARACTERS);
+	return endsWith(datasets, offset + 2, COMPLETION_CHARACTERS);
     }
 
     /**

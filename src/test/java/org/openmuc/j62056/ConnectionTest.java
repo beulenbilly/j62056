@@ -201,19 +201,19 @@ public class ConnectionTest {
     @Test
     public void testTermindatedWithCrLf() {
 	byte[] data = {21, 12, 42, 12, 0x0d, 0x0a, 35};
-	Assert.assertTrue(instance.termindatedWithCrLf(data, 3));
+	Assert.assertTrue(instance.termindatedWithCrLf(data, 4));
     }
 
     @Test
     public void testTermindatedWithCrLf2() {
 	byte[] data = {21, 12, 42, 12, 0x0d, 0x0a};
-	Assert.assertTrue(instance.termindatedWithCrLf(data, 3));
+	Assert.assertTrue(instance.termindatedWithCrLf(data, 4));
     }
 
     @Test
     public void testNotTermindatedWithCrLf() {
 	byte[] data = {21, 12, 42, 12, 0x0d, 0x0a, 35};
-	Assert.assertFalse(instance.termindatedWithCrLf(data, 4));
+	Assert.assertFalse(instance.termindatedWithCrLf(data, 5));
     }
 
     @Test
@@ -231,13 +231,13 @@ public class ConnectionTest {
     @Test
     public void testEndOfDataSets() {
 	byte[] data = {21, 12, 42, 0x21, 0x0d, 0x0a, 35};
-	Assert.assertTrue(instance.endOfDataSets(data, 2));
+	Assert.assertTrue(instance.endOfDataSets(data, 3));
     }
 
     @Test
     public void testEndOfDataSets2() {
 	byte[] data = {21, 12, 42, 0x21, 0x0d, 0x0a};
-	Assert.assertTrue(instance.endOfDataSets(data, 2));
+	Assert.assertTrue(instance.endOfDataSets(data, 3));
     }
 
     @Test
@@ -272,8 +272,62 @@ public class ConnectionTest {
 	Assert.assertTrue(dataSets.isEmpty());
     }
 
+    @Test
+    public void testReadValidDataSets() throws IOException {
+	String dataBlock = new String(new byte[]{(byte) 0x02}) //STX
+		+ "1-0:0.0.0*255(1ESY1160142770)\r\n"
+		+ "1-0:1.8.0*255(00000504.9023619*kWh)\r\n"
+		+ "1-0:21.7.0*255(-000115.94*W)\r\n"
+		+ "1-0:96.5.5*255(80)\r\n"
+		+ "0-0:96.1.255*255(1ESY1160142770)\r\n"
+		+ "!\r\n"
+		+ new String(new byte[]{(byte) 0x03, (byte) 0xff}); //ETX plus fake-BCC
+	List<DataSet> dataSets = instance.readDataSets(dataBlock.getBytes(), 1);
+	Assert.assertNotNull(dataSets);
+	Assert.assertTrue(dataSets.size() == 5);
+	for (int i = 0; i < dataSets.size(); i++) {
+	    DataSet ds = dataSets.get(i);
+	    switch (i) {
+		case 0:
+		    Assert.assertEquals("1-0:0.0.0*255", ds.getId());
+		    Assert.assertEquals("1ESY1160142770", ds.getValue());
+		    Assert.assertEquals("", ds.getUnit());
+		    break;
+		case 1:
+		    Assert.assertEquals("1-0:1.8.0*255", ds.getId());
+		    Assert.assertEquals("00000504.9023619", ds.getValue());
+		    Assert.assertEquals("kWh", ds.getUnit());
+		    break;
+		case 2:
+		    Assert.assertEquals("1-0:21.7.0*255", ds.getId());
+		    Assert.assertEquals("-000115.94", ds.getValue());
+		    Assert.assertEquals("W", ds.getUnit());
+		    break;
+		case 3:
+		    Assert.assertEquals("1-0:96.5.5*255", ds.getId());
+		    Assert.assertEquals("80", ds.getValue());
+		    Assert.assertEquals("", ds.getUnit());
+		    break;
+		case 4:
+		    Assert.assertEquals("0-0:96.1.255*255", ds.getId());
+		    Assert.assertEquals("1ESY1160142770", ds.getValue());
+		    Assert.assertEquals("", ds.getUnit());
+		    break;
+		default:
+		    Assert.fail("not implemented");
+		    break;
+	    }
+	}
+    }
+
     private InputStream createInputStream(byte[] bytes) {
 	return new ByteArrayInputStream(bytes);
+    }
+
+    public static void main(String[] args) {
+	for (byte b : "!\r\n".getBytes()) {
+	    System.out.println("Byte: " + b);
+	}
     }
 
 }
