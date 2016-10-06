@@ -35,11 +35,11 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 import org.openmuc.j62056.DataSet;
 import org.openmuc.j62056.MessageNotCompleteException;
-import org.openmuc.j62056.ModeConnection;
 
-public abstract class AbstractConnection implements ModeConnection {
+public abstract class AbstractConnection implements AutoCloseable {
 
     private final String serialPortName;
     private SerialPort serialPort;
@@ -127,7 +127,6 @@ public abstract class AbstractConnection implements ModeConnection {
      *
      * @throws IOException if any kind of error occurs opening the serial port.
      */
-    @Override
     public void open() throws IOException {
 
 	CommPortIdentifier portIdentifier;
@@ -177,6 +176,21 @@ public abstract class AbstractConnection implements ModeConnection {
 	serialPort.close();
 	serialPort = null;
     }
+
+    /**
+     * Requests a data message from the remote device using IEC 62056-21 Mode C.
+     * The data message received is parsed and a list of data sets is returned.
+     *
+     * @return A list of data sets contained in the data message response from
+     * the remote device. The first data set will contain the "identification"
+     * of the meter as the id and empty strings for value and unit.
+     * @throws IOException if any kind of error other than timeout occurs while
+     * trying to read the remote device. Note that the connection is not closed
+     * when an IOException is thrown.
+     * @throws TimeoutException if no response at all (not even a single byte)
+     * was received from the meter within the timeout span.
+     */
+    public abstract List<DataSet> read() throws IOException, TimeoutException;
 
     /**
      * read the datasets.
