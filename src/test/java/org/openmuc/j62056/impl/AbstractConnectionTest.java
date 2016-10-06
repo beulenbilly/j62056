@@ -3,13 +3,14 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.openmuc.j62056;
+package org.openmuc.j62056.impl;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -17,21 +18,29 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
+import org.openmuc.j62056.DataSet;
+import org.openmuc.j62056.MessageNotCompleteException;
 
 /**
  *
  * @author bilke
  */
-public class ConnectionTest {
+public class AbstractConnectionTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private Connection instance;
+    private AbstractConnection instance;
 
     @Before
     public void setUp() {
-	instance = new Connection("/dev/null");
+	instance = new AbstractConnection("/dev/null") {
+	    @Override
+	    public List<DataSet> read() throws IOException, TimeoutException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	    }
+
+	};
     }
 
     @After
@@ -114,7 +123,7 @@ public class ConnectionTest {
     public void testReadDataNone() throws IOException {
 	exception.expect(MessageNotCompleteException.class);
 	InputStream is = Mockito.mock(InputStream.class);
-	instance.readData(is, 10, Connection.COMPLETION_CHARACTERS, 1000);
+	instance.readData(is, 10, AbstractConnection.COMPLETION_CHARACTERS, 1000);
     }
 
     @Test
@@ -123,7 +132,7 @@ public class ConnectionTest {
 	InputStream is = Mockito.mock(InputStream.class);
 	Mockito.when(is.available()).thenReturn(2);
 	Mockito.when(is.read(Mockito.any(byte[].class), Mockito.any(int.class), Mockito.any(int.class))).thenThrow(new IOException());
-	instance.readData(is, 10, Connection.COMPLETION_CHARACTERS, 1000);
+	instance.readData(is, 10, AbstractConnection.COMPLETION_CHARACTERS, 1000);
     }
 
     @Test
@@ -131,7 +140,7 @@ public class ConnectionTest {
 	final byte[] answer = {12, 32, 53, 23, 54, 12, 34, 21, 2, 1, 3};
 	exception.expect(MessageNotCompleteException.class);
 	InputStream is = createInputStream(answer);
-	instance.readData(is, 10, Connection.COMPLETION_CHARACTERS, 1000);
+	instance.readData(is, 10, AbstractConnection.COMPLETION_CHARACTERS, 1000);
     }
 
     @Test
@@ -144,9 +153,9 @@ public class ConnectionTest {
 
     @Test
     public void testReadDataAck() throws IOException {
-	final byte[] answer = Connection.ACKNOWLEDGE;
+	final byte[] answer = AbstractConnection.ACKNOWLEDGE;
 	InputStream is = createInputStream(answer);
-	Assert.assertArrayEquals(answer, instance.readData(is, answer.length, Connection.COMPLETION_CHARACTERS, 1000));
+	Assert.assertArrayEquals(answer, instance.readData(is, answer.length, AbstractConnection.COMPLETION_CHARACTERS, 1000));
     }
 
     @Test
