@@ -38,6 +38,8 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 import org.openmuc.j62056.DataSet;
 import org.openmuc.j62056.MessageNotCompleteException;
+import org.openmuc.j62056.model.BaudRate;
+import org.openmuc.j62056.model.Header;
 
 public abstract class AbstractConnection implements AutoCloseable {
 
@@ -420,6 +422,41 @@ public abstract class AbstractConnection implements AutoCloseable {
 	} catch (UnsupportedCommOperationException e) {
 	    throw new IOException("Unable to set the given serial comm parameters", e);
 	}
+    }
+
+    protected Header convert(byte[] data) {
+	Header header = null;
+	if ((null != data) && (data.length > 0)) {
+	    int start = -1;
+	    int end = -1;
+	    for (int i = 0; i < (data.length - 1); i++) {
+		byte b = data[i];
+		switch (data[i]) {
+		    case 0x2F:
+			if ((i + 1) < data.length) {
+			    start = i + 1;
+			}
+			break;
+		    case 0x0D:
+			if (0x0A == data[i + 1]) {
+			    end = i;
+			    break;
+			}
+		    default:
+			break;
+		}
+		if ((start != -1) && (end != -1)) {
+		    break;
+		}
+	    }
+	    if ((start != -1) && (end != -1)) {
+		String mId = new String(data, start, 3, getCharset());
+		byte baudRateByte = data[start + 3];
+		String id = new String(data, start + 4, end - start - 4, getCharset());
+		header = new Header(id, mId, baudRateByte, BaudRate.convert(baudRateByte));
+	    }
+	}
+	return header;
     }
 
     protected SerialPort getSerialPort() {

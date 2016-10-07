@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 import org.openmuc.j62056.config.Mode;
 import org.openmuc.j62056.impl.AbstractConnection;
-import org.openmuc.j62056.impl.ModeDConnection;
+import org.openmuc.j62056.impl.ModeCConnection;
 
 public class Connection {
 
@@ -77,7 +77,7 @@ public class Connection {
 	}
 	switch (mode) {
 	    case D:
-		connection = new ModeDConnection(serialPort, handleEcho, baudRateChangeDelay);
+		connection = new ModeCConnection(serialPort, handleEcho, baudRateChangeDelay);
 		break;
 	    case E:
 		break;

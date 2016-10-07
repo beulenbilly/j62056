@@ -20,6 +20,8 @@ import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 import org.openmuc.j62056.DataSet;
 import org.openmuc.j62056.MessageNotCompleteException;
+import org.openmuc.j62056.model.BaudRate;
+import org.openmuc.j62056.model.Header;
 
 /**
  *
@@ -329,14 +331,71 @@ public class AbstractConnectionTest {
 	}
     }
 
-    private InputStream createInputStream(byte[] bytes) {
-	return new ByteArrayInputStream(bytes);
+    @Test
+    public void testConvertHeaderNull() {
+	Header result = instance.convert(null);
+
+	Assert.assertNull(result);
     }
 
-    public static void main(String[] args) {
-	for (byte b : "!\r\n".getBytes()) {
-	    System.out.println("Byte: " + b);
-	}
+    @Test
+    public void testConvertHeaderNoStart() {
+	String mId = "ESY";
+	String baudRate = "5";
+	String id = "Q3DA3024 V3.04";
+	String header = mId + baudRate + id + "\r\n";
+
+	Header result = instance.convert(header.getBytes());
+
+	Assert.assertNull(result);
+    }
+
+    @Test
+    public void testConvertHeaderNoEnd() {
+	String mId = "ESY";
+	String baudRate = "5";
+	String id = "Q3DA3024 V3.04";
+	String header = "/" + mId + baudRate + id + "\r";
+
+	Header result = instance.convert(header.getBytes());
+
+	Assert.assertNull(result);
+    }
+
+    @Test
+    public void testConvertHeaderModeC() {
+	String mId = "ESY";
+	String baudRate = "5";
+	String id = "Q3DA3024 V3.04";
+	String header = "/" + mId + baudRate + id + "\r\n";
+
+	Header result = instance.convert(header.getBytes());
+
+	Assert.assertNotNull(result);
+	Assert.assertEquals(mId, result.getManufacturesId());
+	Assert.assertEquals(id, result.getIdentifier());
+	Assert.assertEquals((byte) 0x35, result.getBaudRateByte());
+	Assert.assertEquals(BaudRate.Baud_9600, result.getBaudrate());
+    }
+
+    @Test
+    public void testConvertHeaderModeD() {
+	String mId = "ESY";
+	String baudRate = "5";
+	String id = "Q3DA3024 V3.04";
+	String header = "/" + mId + baudRate + id + "\r\n\r\n1-0:96.5.5*255(80)\r\n0-0:96.1.255*255(1ESY1160142770)\r\n!\r\n";
+
+	Header result = instance.convert(header.getBytes());
+
+	Assert.assertNotNull(result);
+	Assert.assertEquals(mId, result.getManufacturesId());
+	Assert.assertEquals(id, result.getIdentifier());
+	Assert.assertEquals((byte) 0x35, result.getBaudRateByte());
+	Assert.assertEquals(BaudRate.Baud_9600, result.getBaudrate());
+    }
+
+    private InputStream createInputStream(byte[] bytes) {
+	return new ByteArrayInputStream(bytes);
     }
 
 }
