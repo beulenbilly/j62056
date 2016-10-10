@@ -24,7 +24,7 @@ public class ModeDConnection extends AbstractConnection {
     }
 
     public ModeDConnection(String serialPort) {
-	super(serialPort);
+	this(serialPort, false, 0);
     }
 
     @Override

@@ -49,6 +49,10 @@ public abstract class AbstractConnection implements AutoCloseable {
     private final boolean handleEcho;
     private final int baudRateChangeDelay;
     private int timeout = 5000;
+    private int baudRate;
+    private int parity;
+    private int databits;
+    private int stopbits;
 
     private DataOutputStream os;
     private DataInputStream is;
@@ -481,6 +485,38 @@ public abstract class AbstractConnection implements AutoCloseable {
 
     protected static Charset getCharset() {
 	return charset;
+    }
+
+    public int getBaudRate() {
+	return baudRate;
+    }
+
+    public void setBaudRate(int baudRate) {
+	this.baudRate = baudRate;
+    }
+
+    public int getParity() {
+	return parity;
+    }
+
+    public void setParity(int parity) {
+	this.parity = parity;
+    }
+
+    public int getDatabits() {
+	return databits;
+    }
+
+    public void setDatabits(int databits) {
+	this.databits = databits;
+    }
+
+    public int getStopbits() {
+	return stopbits;
+    }
+
+    public void setStopbits(int stopbits) {
+	this.stopbits = stopbits;
     }
 
 }

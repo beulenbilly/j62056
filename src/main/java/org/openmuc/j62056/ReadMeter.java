@@ -24,88 +24,106 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import org.openmuc.j62056.config.Mode;
 
 public class ReadMeter {
 
-	private static void printUsage() {
-		System.out.println("SYNOPSIS\n\torg.openmuc.j62056.ReadMeter [-e] [-d <baud_rate_change_delay>] <serial_port>");
-		System.out
-				.println("DESCRIPTION\n\tReads the meter connected to the given serial port and prints the received data to stdout. First prints the identification string received from the meter. Then the data sets received are printed. Each data set is printed on a single line with the format: \"<id>;<value>;<unit>\". Errors are printed to stderr.");
-		System.out.println("OPTIONS");
-		System.out
-				.println("\t<serial_port>\n\t    The serial port used for communication. Examples are /dev/ttyS0 (Linux) or COM1 (Windows)\n");
-		System.out.println("\t-e\n\t    Enable handling of echos caused by some optical tranceivers\n");
-		System.out
-				.println("\t-d <baud_rate_change_delay>\n\t    Delay of baud rate change in ms. Default is 0. USB to serial converters often require a delay of up to 250ms.\n");
+    private static void printUsage() {
+	System.out.println("SYNOPSIS\n\torg.openmuc.j62056.ReadMeter [-e] [-d <baud_rate_change_delay>] [-m <mode>] [-rt <read timeout>] [-br <baudrate>] [-p <parity>] [-db <databits>] [-sb <stop bits>] <serial_port>");
+	System.out.println("DESCRIPTION\n\tReads the meter connected to the given serial port and prints the received data to stdout. First prints the identification string received from the meter. Then the data sets received are printed. Each data set is printed on a single line with the format: \"<id>;<value>;<unit>\". Errors are printed to stderr.");
+	System.out.println("OPTIONS");
+	System.out.println("\t<serial_port>\n\t    The serial port used for communication. Examples are /dev/ttyS0 (Linux) or COM1 (Windows)\n");
+	System.out.println("\t-e\n\t    Enable handling of echos caused by some optical tranceivers\n");
+	System.out.println("\t-d <baud_rate_change_delay>\n\t    Delay of baud rate change in ms. Default is 0. USB to serial converters often require a delay of up to 250ms.\n");
+	System.out.println("\t-m <mode>\n\t    Mode of the connection a,b,c,d or e\n");
+	System.out.println("\t-rt <read timeout>\n\t    time to wait for data, dafault is 5000ms\n");
+	System.out.println("\t-br <baud rate>\n\t    if you have to change the baud rate, default depends on the mode\n");
+	System.out.println("\t-p <parity>\n\t    if you have to change the parity, default depends on the mode\n");
+	System.out.println("\t-db <databits>\n\t    if you have to change the databits, default depends on the mode\n");
+	System.out.println("\t-sb <stop bits>\n\t    if you have to change the stop bits, default depends on the mode\n");
+    }
+
+    public static void main(String[] args) {
+	if (args.length < 1 || args.length > 4) {
+	    printUsage();
+	    System.exit(1);
 	}
 
-	public static void main(String[] args) {
-		if (args.length < 1 || args.length > 4) {
+	String serialPortName = "";
+	boolean echoHandling = false;
+	int baudRateChangeDelay = 0;
+	Mode mode = Mode.C;
+	for (int i = 0; i < args.length; i++) {
+	    switch (args[i]) {
+		case "-e":
+		    echoHandling = true;
+		    break;
+		case "-d":
+		    i++;
+		    if (i == args.length) {
 			printUsage();
 			System.exit(1);
-		}
-
-		String serialPortName = "";
-		boolean echoHandling = false;
-		int baudRateChangeDelay = 0;
-
-		for (int i = 0; i < args.length; i++) {
-			if (args[i].equals("-e")) {
-				echoHandling = true;
-			}
-			else if (args[i].equals("-d")) {
-				i++;
-				if (i == args.length) {
-					printUsage();
-					System.exit(1);
-				}
-				try {
-					baudRateChangeDelay = Integer.parseInt(args[i]);
-				} catch (NumberFormatException e) {
-					printUsage();
-					System.exit(1);
-				}
-			}
-			else {
-				serialPortName = args[i];
-			}
-		}
-
-		Connection connection = new Connection(serialPortName, echoHandling, baudRateChangeDelay);
-
-		try {
-			connection.open();
-		} catch (IOException e) {
-			System.err.println("Failed to open serial port: " + e.getMessage());
+		    }
+		    try {
+			baudRateChangeDelay = Integer.parseInt(args[i]);
+		    } catch (NumberFormatException e) {
+			printUsage();
 			System.exit(1);
-		}
-
-		List<DataSet> dataSets = null;
-		try {
-			dataSets = connection.read();
-		} catch (IOException e) {
-			System.err.println("IOException while trying to read: " + e.getMessage());
-			connection.close();
+		    }
+		    break;
+		case "-m":
+		    i++;
+		    if (i == args.length) {
+			printUsage();
 			System.exit(1);
-		} catch (TimeoutException e) {
-			System.err.print("Read attempt timed out");
-			connection.close();
+		    }
+		    try {
+			mode = Mode.valueOf(args[i].toUpperCase());
+		    } catch (IllegalArgumentException | NullPointerException e) {
+			printUsage();
 			System.exit(1);
-		}
-
-		Iterator<DataSet> dataSetIt = dataSets.iterator();
-
-		// print identification string
-		System.out.println(dataSetIt.next().getId());
-
-		// print data sets on the following lines
-		while (dataSetIt.hasNext()) {
-			DataSet dataSet = dataSetIt.next();
-			System.out.println(dataSet.getId() + ";" + dataSet.getValue() + ";" + dataSet.getUnit());
-		}
-
-		connection.close();
-
+		    }
+		default:
+		    serialPortName = args[i];
+		    break;
+	    }
 	}
+
+	Connection connection = new Connection(serialPortName, echoHandling, baudRateChangeDelay, mode);
+
+	try {
+	    connection.open();
+	} catch (IOException e) {
+	    System.err.println("Failed to open serial port: " + e.getMessage());
+	    System.exit(1);
+	}
+
+	List<DataSet> dataSets = null;
+	try {
+	    dataSets = connection.read();
+	} catch (IOException e) {
+	    System.err.println("IOException while trying to read: " + e.getMessage());
+	    connection.close();
+	    System.exit(1);
+	} catch (TimeoutException e) {
+	    System.err.print("Read attempt timed out");
+	    connection.close();
+	    System.exit(1);
+	}
+
+	Iterator<DataSet> dataSetIt = dataSets.iterator();
+
+	// print identification string
+	System.out.println(dataSetIt.next().getId());
+
+	// print data sets on the following lines
+	while (dataSetIt.hasNext()) {
+	    DataSet dataSet = dataSetIt.next();
+	    System.out.println(dataSet.getId() + ";" + dataSet.getValue() + ";" + dataSet.getUnit());
+	}
+
+	connection.close();
+
+    }
 
 }

@@ -25,11 +25,15 @@ import org.openmuc.j62056.model.Header;
 public class ModeCConnection extends AbstractConnection {
 
     public ModeCConnection(String serialPort) {
-	super(serialPort);
+	this(serialPort, false, 0);
     }
 
     public ModeCConnection(String serialPort, boolean handleEcho, int baudRateChangeDelay) {
 	super(serialPort, handleEcho, baudRateChangeDelay);
+	setBaudRate(300);
+	setDatabits(SerialPort.DATABITS_7);
+	setStopbits(SerialPort.STOPBITS_1);
+	setParity(SerialPort.PARITY_EVEN);
     }
 
     /**
@@ -97,7 +101,7 @@ public class ModeCConnection extends AbstractConnection {
      */
     protected String signOn(SerialPort serialPort, OutputStream os, InputStream is, int timeout, boolean handleEcho, int baudRateChangeDelay) throws IOException, TimeoutException {
 
-	setSerialPortParams(serialPort, baudRateChangeDelay, 300, SerialPort.DATABITS_7, SerialPort.STOPBITS_1, SerialPort.PARITY_EVEN);
+	setSerialPortParams(serialPort, baudRateChangeDelay, getBaudRate(), getDatabits(), getStopbits(), getParity());
 
 	sendData(os, REQUEST_MESSAGE);
 
