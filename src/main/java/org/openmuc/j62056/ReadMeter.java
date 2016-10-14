@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import org.openmuc.j62056.config.Mode;
+import org.openmuc.j62056.config.Parity;
 
 public class ReadMeter {
 
@@ -37,7 +38,7 @@ public class ReadMeter {
 	System.out.println("\t-d <baud_rate_change_delay>\n\t    Delay of baud rate change in ms. Default is 0. USB to serial converters often require a delay of up to 250ms.\n");
 	System.out.println("\t-m <mode>\n\t    Mode of the connection a,b,c,d or e\n");
 	System.out.println("\t-rt <read timeout>\n\t    time to wait for data, dafault is 5000ms\n");
-	System.out.println("\t-br <baud rate>\n\t    if you have to change the baud rate, default depends on the mode\n");
+	System.out.println("\t-br <baud rate>\n\t    if you have to change the baud rate, default depends on the mode (300 for Mode C, 2400 for Mode D)\n");
 	System.out.println("\t-p <parity>\n\t    if you have to change the parity, default depends on the mode\n");
 	System.out.println("\t-db <databits>\n\t    if you have to change the databits, default depends on the mode\n");
 	System.out.println("\t-sb <stop bits>\n\t    if you have to change the stop bits, default depends on the mode\n");
@@ -53,6 +54,11 @@ public class ReadMeter {
 	boolean echoHandling = false;
 	int baudRateChangeDelay = 0;
 	Mode mode = Mode.C;
+	int readTimeout = -1;
+	int baudRate = -1;
+	Parity parity = null;
+	int dataBits = -1;
+	int stopBits = -1;
 	for (int i = 0; i < args.length; i++) {
 	    switch (args[i]) {
 		case "-e":
@@ -83,6 +89,66 @@ public class ReadMeter {
 			printUsage();
 			System.exit(1);
 		    }
+		case "-rt":
+		    i++;
+		    if (i == args.length) {
+			printUsage();
+			System.exit(1);
+		    }
+		    try {
+			readTimeout = Integer.parseInt(args[i]);
+		    } catch (NumberFormatException e) {
+			printUsage();
+			System.exit(1);
+		    }
+		case "-br":
+		    i++;
+		    if (i == args.length) {
+			printUsage();
+			System.exit(1);
+		    }
+		    try {
+			baudRate = Integer.parseInt(args[i]);
+		    } catch (NumberFormatException e) {
+			printUsage();
+			System.exit(1);
+		    }
+		case "-db":
+		    i++;
+		    if (i == args.length) {
+			printUsage();
+			System.exit(1);
+		    }
+		    try {
+			dataBits = Integer.parseInt(args[i]);
+		    } catch (NumberFormatException e) {
+			printUsage();
+			System.exit(1);
+		    }
+		case "-sb":
+		    i++;
+		    if (i == args.length) {
+			printUsage();
+			System.exit(1);
+		    }
+		    try {
+			stopBits = Integer.parseInt(args[i]);
+		    } catch (NumberFormatException e) {
+			printUsage();
+			System.exit(1);
+		    }
+		case "-p":
+		    i++;
+		    if (i == args.length) {
+			printUsage();
+			System.exit(1);
+		    }
+		    try {
+			parity = Parity.convert(args[i]);
+		    } catch (NumberFormatException e) {
+			printUsage();
+			System.exit(1);
+		    }
 		default:
 		    serialPortName = args[i];
 		    break;
@@ -90,6 +156,22 @@ public class ReadMeter {
 	}
 
 	Connection connection = new Connection(serialPortName, echoHandling, baudRateChangeDelay, mode);
+
+	if (readTimeout > -1) {
+	    connection.setTimeout(readTimeout);
+	}
+	if (baudRate > 0) {
+	    connection.setBaudRate(baudRate);
+	}
+	if (null != parity) {
+	    connection.setParity(parity.value);
+	}
+	if (dataBits > 0) {
+	    connection.setDatabits(dataBits);
+	}
+	if (stopBits > 0) {
+	    connection.setStopbits(stopBits);
+	}
 
 	try {
 	    connection.open();

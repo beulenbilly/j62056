@@ -5,6 +5,7 @@
  */
 package org.openmuc.j62056.impl;
 
+import gnu.io.SerialPort;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +22,10 @@ public class ModeDConnection extends AbstractConnection {
 
     public ModeDConnection(String serialPort, boolean handleEcho, int baudRateChangeDelay) {
 	super(serialPort, handleEcho, baudRateChangeDelay);
+	setBaudRate(2400);
+	setDatabits(SerialPort.DATABITS_7);
+	setStopbits(SerialPort.STOPBITS_1);
+	setParity(SerialPort.PARITY_EVEN);
     }
 
     public ModeDConnection(String serialPort) {
@@ -32,6 +37,8 @@ public class ModeDConnection extends AbstractConnection {
 	if (getSerialPort() == null) {
 	    throw new IllegalStateException("Connection is not open.");
 	}
+
+	setSerialPortParams(getSerialPort(), getBaudRateChangeDelay(), getBaudRate(), getDatabits(), getStopbits(), getParity());
 
 	//ignoring ETX and BCC
 	byte[] dataSets = readData(getIs(), 12, MESSAGE_COMPLETION_CHARACTERS, getTimeout());

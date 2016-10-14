@@ -151,4 +151,35 @@ public class Connection {
 	return connection.read();
     }
 
+    public int getParity() {
+	return connection.getParity();
+    }
+
+    public void setParity(int parity) {
+	connection.setParity(parity);
+    }
+
+    public int getDatabits() {
+	return connection.getDatabits();
+    }
+
+    public void setDatabits(int databits) {
+	connection.setDatabits(databits);
+    }
+
+    public int getStopbits() {
+	return connection.getStopbits();
+    }
+
+    public void setStopbits(int stopbits) {
+	connection.setStopbits(stopbits);
+    }
+
+    public int getBaudRate() {
+	return connection.getBaudRate();
+    }
+
+    public void setBaudRate(int baudRate) {
+	connection.setBaudRate(baudRate);
+    }
 }
