@@ -45,7 +45,7 @@ public class ReadMeter {
     }
 
     public static void main(String[] args) {
-	if (args.length < 1 || args.length > 4) {
+	if (args.length < 1 || args.length > 17) {
 	    printUsage();
 	    System.exit(1);
 	}
@@ -89,6 +89,7 @@ public class ReadMeter {
 			printUsage();
 			System.exit(1);
 		    }
+		    break;
 		case "-rt":
 		    i++;
 		    if (i == args.length) {
@@ -101,6 +102,7 @@ public class ReadMeter {
 			printUsage();
 			System.exit(1);
 		    }
+		    break;
 		case "-br":
 		    i++;
 		    if (i == args.length) {
@@ -113,6 +115,7 @@ public class ReadMeter {
 			printUsage();
 			System.exit(1);
 		    }
+		    break;
 		case "-db":
 		    i++;
 		    if (i == args.length) {
@@ -125,6 +128,7 @@ public class ReadMeter {
 			printUsage();
 			System.exit(1);
 		    }
+		    break;
 		case "-sb":
 		    i++;
 		    if (i == args.length) {
@@ -137,6 +141,7 @@ public class ReadMeter {
 			printUsage();
 			System.exit(1);
 		    }
+		    break;
 		case "-p":
 		    i++;
 		    if (i == args.length) {
@@ -149,6 +154,7 @@ public class ReadMeter {
 			printUsage();
 			System.exit(1);
 		    }
+		    break;
 		default:
 		    serialPortName = args[i];
 		    break;

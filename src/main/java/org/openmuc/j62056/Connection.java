@@ -26,6 +26,7 @@ import java.util.concurrent.TimeoutException;
 import org.openmuc.j62056.config.Mode;
 import org.openmuc.j62056.impl.AbstractConnection;
 import org.openmuc.j62056.impl.ModeCConnection;
+import org.openmuc.j62056.impl.ModeDConnection;
 
 public class Connection {
 
@@ -76,10 +77,11 @@ public class Connection {
 	    throw new IllegalArgumentException("mode may not be NULL");
 	}
 	switch (mode) {
-	    case D:
+	    case C:
 		connection = new ModeCConnection(serialPort, handleEcho, baudRateChangeDelay);
 		break;
-	    case E:
+	    case D:
+		connection = new ModeDConnection(serialPort, handleEcho, baudRateChangeDelay);
 		break;
 	    default:
 		throw new IllegalArgumentException("Mode is not implemented: " + mode);
