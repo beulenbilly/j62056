@@ -26,8 +26,6 @@ import gnu.io.NoSuchPortException;
 import gnu.io.PortInUseException;
 import gnu.io.SerialPort;
 import gnu.io.UnsupportedCommOperationException;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -54,8 +52,8 @@ public abstract class AbstractConnection implements AutoCloseable {
     private int databits;
     private int stopbits;
 
-    private DataOutputStream os;
-    private DataInputStream is;
+    private OutputStream os;
+    private InputStream is;
 
     protected static final byte[] REQUEST_MESSAGE = new byte[]{(byte) 0x2F, (byte) 0x3F, (byte) 0x21, (byte) 0x0D, (byte) 0x0A};
 
@@ -161,8 +159,10 @@ public abstract class AbstractConnection implements AutoCloseable {
 	serialPort = (SerialPort) commPort;
 
 	try {
-	    os = new DataOutputStream(serialPort.getOutputStream());
-	    is = new DataInputStream(serialPort.getInputStream());
+//	    os = new DataOutputStream(serialPort.getOutputStream());
+//	    is = new DataInputStream(serialPort.getInputStream());
+	    os = serialPort.getOutputStream();
+	    is = serialPort.getInputStream();
 	} catch (IOException e) {
 	    serialPort.close();
 	    serialPort = null;
@@ -350,16 +350,19 @@ public abstract class AbstractConnection implements AutoCloseable {
 	int numBytesReadTotal = 0;
 
 	while (timeout == 0 || timeval < timeout) {
-	    int availableBytes = is.available();
-	    if ((availableBytes > 0) && (numBytesReadTotal + availableBytes <= INPUT_BUFFER_LENGTH)) {
+	    if (is.available() > 0) {
 		int bytesToRead = 1;
 		if (numBytesReadTotal == 0) {
 		    bytesToRead = readAtLeastBytes;
 		}
+
+		if (numBytesReadTotal + bytesToRead >= INPUT_BUFFER_LENGTH) {
+		    throw new MessageNotCompleteException(numBytesReadTotal, readBuffer, "Buffer to small for message");
+		}
 		int numBytesRead = is.read(readBuffer, numBytesReadTotal, bytesToRead);
-		numBytesReadTotal += numBytesRead;
 
 		if (numBytesRead > 0) {
+		    numBytesReadTotal += numBytesRead;
 		    timeval = 0;
 		}
 
@@ -367,22 +370,20 @@ public abstract class AbstractConnection implements AutoCloseable {
 		    readSuccessful = true;
 		    break;
 		}
-	    }
-
-	    try {
-		Thread.sleep(SLEEP_INTERVAL);
-	    } catch (InterruptedException e) {
+	    } else {
+		try {
+		    Thread.sleep(SLEEP_INTERVAL);
+		} catch (InterruptedException e) {
+		}
 	    }
 
 	    timeval += SLEEP_INTERVAL;
 	}
 
-	byte[] result = Arrays.copyOf(readBuffer, numBytesReadTotal);
-
 	if (!readSuccessful) {
-	    throw new MessageNotCompleteException(numBytesReadTotal, result, "Error while reading message");
+	    throw new MessageNotCompleteException(numBytesReadTotal, readBuffer, "Error while reading message");
 	}
-	return result;
+	return Arrays.copyOf(readBuffer, numBytesReadTotal);
     }
 
     protected boolean endsWith(final byte[] input, final int readedBytes, final byte[] endBytes) {
@@ -471,11 +472,11 @@ public abstract class AbstractConnection implements AutoCloseable {
 	return handleEcho;
     }
 
-    protected DataOutputStream getOs() {
+    protected OutputStream getOs() {
 	return os;
     }
 
-    protected DataInputStream getIs() {
+    protected InputStream getIs() {
 	return is;
     }
 
