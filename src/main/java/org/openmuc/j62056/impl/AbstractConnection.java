@@ -159,8 +159,6 @@ public abstract class AbstractConnection implements AutoCloseable {
 	serialPort = (SerialPort) commPort;
 
 	try {
-//	    os = new DataOutputStream(serialPort.getOutputStream());
-//	    is = new DataInputStream(serialPort.getInputStream());
 	    os = serialPort.getOutputStream();
 	    is = serialPort.getInputStream();
 	} catch (IOException e) {
